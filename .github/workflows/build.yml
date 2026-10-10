@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: brew install xcodegen libarchive
+      - name: Bootstrap
+        run: ./scripts/bootstrap.sh
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project MacUnZip.xcodeproj -scheme MacUnZip -configuration Debug \
+            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build | tee build.log | grep -E "error:|warning: .*(MainActor|Sendable)|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build.log
