@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-15
@@ -44,3 +47,12 @@ jobs:
         with:
           name: MacUnZip-dmg
           path: MacUnZip.dmg
+      - name: Publish test build
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete test-build --yes --cleanup-tag 2>/dev/null || true
+          gh release create test-build MacUnZip.dmg --prerelease --target "$GITHUB_SHA" \
+            --title "测试版（$(git rev-parse --short HEAD)）" \
+            --notes "临时签名的测试版本，仅用于本机安装测试。首次打开请在访达中右键 MacUnZip →「打开」。"
