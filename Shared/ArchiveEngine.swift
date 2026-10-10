@@ -77,7 +77,8 @@ enum ArchiveEngine {
         defer { archive_write_free(writer) }
         let flags = ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM
             | ARCHIVE_EXTRACT_SECURE_NODOTDOT | ARCHIVE_EXTRACT_SECURE_SYMLINKS
-            | ARCHIVE_EXTRACT_SECURE_NOABSOLUTEPATHS
+        // 不能用 SECURE_NOABSOLUTEPATHS：下面会把条目路径改写成目标目录下的绝对路径。
+        // 条目自带的绝对路径在改写前去掉开头的“/”，“..”由 NODOTDOT 拦截。
         archive_write_disk_set_options(writer, flags)
         archive_write_disk_set_standard_lookup(writer)
 
@@ -93,7 +94,10 @@ enum ArchiveEngine {
             if archive_entry_is_encrypted(entry) != 0, password?.isEmpty ?? true {
                 throw ArchiveError.passwordRequired
             }
-            archive_entry_set_pathname(entry, dest.appendingPathComponent(name).path)
+            archive_entry_set_pathname(entry, dest.appendingPathComponent(relative(name)).path)
+            if let link = archive_entry_hardlink(entry).map({ String(cString: $0) }) {
+                archive_entry_set_hardlink(entry, dest.appendingPathComponent(relative(link)).path)
+            }
 
             guard archive_write_header(writer, entry) >= ARCHIVE_WARN else { throw error(writer) }
             if archive_entry_size(entry) > 0 || archive_entry_size_is_set(entry) == 0 {
@@ -182,6 +186,10 @@ enum ArchiveEngine {
             }
             return a.count < b.count
         }
+    }
+
+    private static func relative(_ path: String) -> String {
+        String(path.drop { $0 == "/" })
     }
 
     /// 是否需要密码（只看到第一个加密条目即返回）。
