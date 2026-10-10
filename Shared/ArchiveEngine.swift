@@ -63,6 +63,8 @@ enum ArchiveEngine {
 
     private static func extractRaw(_ archive: URL, to dest: URL, password: String?,
                                    only selection: Set<String>?, progress: Progress?) throws {
+        // SECURE_SYMLINKS 会检查整条路径，目标目录本身要先解析成真实路径（例如 /var → /private/var）
+        let dest = realPath(dest)
         guard let reader = archive_read_new() else { throw ArchiveError.libarchive("无法初始化解压器") }
         defer { archive_read_free(reader) }
         archive_read_support_filter_all(reader)
@@ -186,6 +188,12 @@ enum ArchiveEngine {
             }
             return a.count < b.count
         }
+    }
+
+    static func realPath(_ url: URL) -> URL {
+        guard let resolved = realpath(url.path, nil) else { return url }
+        defer { free(resolved) }
+        return URL(fileURLWithPath: String(cString: resolved), isDirectory: true)
     }
 
     private static func relative(_ path: String) -> String {
