@@ -43,7 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let settings = SharedSettings.shared
         if settings.onboarded && settings.doubleClickBehavior == .extractInPlace {
-            JobQueue.shared.extract(fileURLs)
+            // 双击解压使用设置里的默认解压位置（默认是原位置）
+            JobQueue.shared.extract(fileURLs, to: MainModel.shared.destinationURL(for: settings.defaultExtractFolderID))
         } else if !settings.onboarded {
             showMainWindow()
             MainModel.shared.pending = fileURLs
