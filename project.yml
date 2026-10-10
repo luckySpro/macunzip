@@ -23,6 +23,7 @@ targets:
   MacUnZip:
     type: application
     platform: macOS
+    scheme: {}
     sources:
       - App
       - Shared
