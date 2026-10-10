@@ -45,4 +45,4 @@ open MacUnZip.xcodeproj
 
 - [ ] 7z 加密压缩：libarchive 不支持写入加密 7z，需要另接 7-Zip 引擎（LGPL，需评估上架方式）
 - [ ] 上架前把 libarchive 改为静态链接自带版本，避免依赖系统版本的格式支持差异
-- [ ] 应用图标与 App Store 截图
+- [ ] App Store 截图（图标见 docs/icon.png，由 scripts/make-icon.py 生成）
