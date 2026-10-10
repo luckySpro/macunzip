@@ -62,8 +62,11 @@ final class ArchiveEngineTests: XCTestCase {
     func testUniqueNameWhenExtractingTwice() throws {
         let archive = root.appendingPathComponent("twice.zip")
         try ArchiveEngine.compress([source], to: archive, format: .zip, level: .fast)
-        let first = try ArchiveEngine.extract(archive, into: root)
-        let second = try ArchiveEngine.extract(archive, into: root)
+        let outDir = root.appendingPathComponent("twice", isDirectory: true)
+        try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+        let first = try ArchiveEngine.extract(archive, into: outDir)
+        let second = try ArchiveEngine.extract(archive, into: outDir)
+        XCTAssertEqual(first.lastPathComponent, "资料")
         XCTAssertNotEqual(first, second)
         XCTAssertEqual(second.lastPathComponent, "资料 2")
     }
