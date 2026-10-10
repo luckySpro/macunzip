@@ -1,0 +1,117 @@
+name: MacUnZip
+options:
+  bundleIdPrefix: com.luckyspro
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""            # 填入你的 Team ID
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    # libarchive：头文件来自 Homebrew（brew install libarchive），运行时链接系统自带的 /usr/lib/libarchive
+    HEADER_SEARCH_PATHS:
+      - /opt/homebrew/opt/libarchive/include
+      - /usr/local/opt/libarchive/include
+    SWIFT_INCLUDE_PATHS: $(SRCROOT)/CArchive
+
+targets:
+  MacUnZip:
+    type: application
+    platform: macOS
+    sources:
+      - App
+      - Shared
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: MacUnZip
+        LSApplicationCategoryType: public.app-category.utilities
+        MUZAppGroup: $(TeamIdentifierPrefix)com.luckyspro.macunzip
+        CFBundleURLTypes:
+          - CFBundleURLName: com.luckyspro.macunzip
+            CFBundleURLSchemes: [macunzip]
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Archive
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Default
+            LSItemContentTypes:
+              - public.zip-archive
+              - com.rarlab.rar-archive
+              - org.7-zip.7-zip-archive
+              - public.tar-archive
+              - org.gnu.gnu-zip-archive
+              - org.gnu.gnu-zip-tar-archive
+              - org.tukaani.xz-archive
+              - public.bzip2-archive
+              - com.facebook.zstandard-archive
+              - public.iso-image
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.rarlab.rar-archive
+            UTTypeDescription: RAR Archive
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [rar]
+              public.mime-type: [application/vnd.rar, application/x-rar-compressed]
+          - UTTypeIdentifier: org.7-zip.7-zip-archive
+            UTTypeDescription: 7-Zip Archive
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [7z]
+              public.mime-type: [application/x-7z-compressed]
+          - UTTypeIdentifier: org.tukaani.xz-archive
+            UTTypeDescription: XZ Archive
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [xz, txz]
+          - UTTypeIdentifier: com.facebook.zstandard-archive
+            UTTypeDescription: Zstandard Archive
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [zst, tzst]
+    entitlements:
+      path: App/MacUnZip.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.files.bookmarks.app-scope: true
+        com.apple.security.application-groups:
+          - $(TeamIdentifierPrefix)com.luckyspro.macunzip
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.luckyspro.macunzip
+        OTHER_LDFLAGS: [-larchive]
+    dependencies:
+      - target: MacUnZipFinder
+        embed: true
+
+  MacUnZipFinder:
+    type: app-extension
+    platform: macOS
+    sources:
+      - FinderExtension
+      - path: Shared/Settings.swift
+      - path: Shared/ArchiveFormat.swift
+      - path: Shared/Requests.swift
+    info:
+      path: FinderExtension/Info.plist
+      properties:
+        CFBundleDisplayName: MacUnZip 右键菜单
+        MUZAppGroup: $(TeamIdentifierPrefix)com.luckyspro.macunzip
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.FinderSync
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FinderSync
+          NSExtensionAttributes: {}
+    entitlements:
+      path: FinderExtension/MacUnZipFinder.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - $(TeamIdentifierPrefix)com.luckyspro.macunzip
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.luckyspro.macunzip.finder
