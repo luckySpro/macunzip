@@ -26,3 +26,21 @@ jobs:
           xcodebuild -project MacUnZip.xcodeproj -scheme MacUnZip -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case .*(passed|failed)|TEST" || true
           grep -q "TEST SUCCEEDED" test.log
+      - name: Package DMG
+        run: |
+          set -o pipefail
+          # 没有开发者证书时使用临时签名（ad-hoc），仅用于本机测试
+          xcodebuild -project MacUnZip.xcodeproj -scheme MacUnZip -configuration Release \
+            -destination 'generic/platform=macOS' -derivedDataPath build \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" \
+            build | tee package.log | grep -E "error:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" package.log
+          APP=build/Build/Products/Release/MacUnZip.app
+          codesign --verify --deep --strict "$APP"
+          mkdir -p dmg && cp -R "$APP" dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname MacUnZip -srcfolder dmg -ov -format UDZO MacUnZip.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MacUnZip-dmg
+          path: MacUnZip.dmg
