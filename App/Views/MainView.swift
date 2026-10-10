@@ -79,8 +79,8 @@ struct MainView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
-        .background(RoundedRectangle(cornerRadius: 10).fill(dropTargeted ? Color.accentColor.opacity(0.12) : Color(nsColor: .controlBackgroundColor)))
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(dropTargeted ? Color.accentColor : Color(nsColor: .separatorColor),
+        .background(RoundedRectangle(cornerRadius: 10).fill(dropTargeted ? Theme.accent.opacity(0.12) : Color(nsColor: .controlBackgroundColor)))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(dropTargeted ? Theme.accent : Color(nsColor: .separatorColor),
                                                                  style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
             loadURLs(providers) { model.handle($0, folderID: model.selectedFolderID) }
@@ -131,14 +131,14 @@ struct FolderChip: View {
         Button { model.selectedFolderID = folderID } label: {
             HStack(spacing: 5) {
                 if isDefault { Image(systemName: "star.fill").foregroundStyle(.orange).font(.caption2) }
-                Image(systemName: systemImage).foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                Image(systemName: systemImage).foregroundStyle(isSelected ? Theme.accent : .secondary)
                 Text(title)
             }
             .font(.callout)
             .padding(.horizontal, 10)
             .frame(height: 26)
-            .background(RoundedRectangle(cornerRadius: 7).fill(isSelected || targeted ? Color.accentColor.opacity(0.14) : Color(nsColor: .quaternaryLabelColor).opacity(0.5)))
-            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(isSelected ? Color.accentColor : .clear))
+            .background(RoundedRectangle(cornerRadius: 7).fill(isSelected || targeted ? Theme.accent.opacity(0.14) : Color(nsColor: .quaternaryLabelColor).opacity(0.5)))
+            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(isSelected ? Theme.accent : .clear))
         }
         .buttonStyle(.plain)
         .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in

@@ -171,7 +171,7 @@ private struct EntryRow: View {
                         .font(.caption2).frame(width: 10)
                 }
                 .buttonStyle(.plain)
-                Image(systemName: "folder.fill").foregroundStyle(Color.accentColor)
+                Image(systemName: "folder.fill").foregroundStyle(Theme.accent)
             } else {
                 Color.clear.frame(width: 10, height: 1)
                 Image(nsImage: NSWorkspace.shared.icon(for: .init(filenameExtension: (entry.name as NSString).pathExtension) ?? .data))

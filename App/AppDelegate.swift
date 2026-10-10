@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.titleVisibility = .hidden
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(rootView: MainView().environmentObject(MainModel.shared)
-                .environmentObject(JobQueue.shared))
+                .environmentObject(JobQueue.shared).themed())
             window.center()
             window.setFrameAutosaveName("MainWindow")
             mainWindow = window
@@ -105,7 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel?.close()
             if let panel { self?.compressPanels.removeAll { $0 === panel } }
             self?.quitIfBackgroundOnly()
-        })
+        }.themed())
         panel.center()
         compressPanels.append(panel)
         panel.makeKeyAndOrderFront(nil)
@@ -121,7 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: PreviewView(model: PreviewModel(archive: archive)) { [weak window] in
             window?.close()
-        })
+        }.themed())
         window.center()
         previewWindows.append(window)
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self, weak window] _ in

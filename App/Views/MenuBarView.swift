@@ -29,8 +29,8 @@ struct MenuBarView: View {
                 Spacer()
             }
             .padding(12)
-            .background(RoundedRectangle(cornerRadius: 9).fill(dropTargeted ? Color.accentColor.opacity(0.12) : .clear))
-            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(dropTargeted ? Color.accentColor : Color(nsColor: .separatorColor),
+            .background(RoundedRectangle(cornerRadius: 9).fill(dropTargeted ? Theme.accent.opacity(0.12) : .clear))
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(dropTargeted ? Theme.accent : Color(nsColor: .separatorColor),
                                                                     style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
             .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
                 loadURLs(providers) { model.handle($0, folderID: model.defaultFolderID) }
@@ -87,12 +87,12 @@ private struct Tile: View {
     var body: some View {
         let isDefault = model.defaultFolderID == folderID
         VStack(spacing: 4) {
-            Image(systemName: systemImage).font(.title3).foregroundStyle(Color.accentColor)
+            Image(systemName: systemImage).font(.title3).foregroundStyle(Theme.accent)
             Text(title).font(.caption).lineLimit(1)
         }
         .frame(maxWidth: .infinity, minHeight: 54)
-        .background(RoundedRectangle(cornerRadius: 9).fill(isDefault || targeted ? Color.accentColor.opacity(0.12) : Color(nsColor: .quaternaryLabelColor).opacity(0.4)))
-        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(isDefault ? Color.accentColor : .clear, lineWidth: 1.5))
+        .background(RoundedRectangle(cornerRadius: 9).fill(isDefault || targeted ? Theme.accent.opacity(0.12) : Color(nsColor: .quaternaryLabelColor).opacity(0.4)))
+        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(isDefault ? Theme.accent : .clear, lineWidth: 1.5))
         .overlay(alignment: .topTrailing) {
             if isDefault { Image(systemName: "star.fill").font(.system(size: 8)).foregroundStyle(.orange).padding(5) }
         }

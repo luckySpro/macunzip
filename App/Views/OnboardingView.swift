@@ -28,7 +28,7 @@ struct OnboardingView: View {
 
             HStack(spacing: 10) {
                 Image(systemName: homeGranted ? "checkmark.circle.fill" : "folder")
-                    .foregroundStyle(homeGranted ? Color.green : Color.accentColor).font(.title3)
+                    .foregroundStyle(homeGranted ? Color.green : Theme.accent).font(.title3)
                 Text(homeGranted ? "已获得个人文件夹的访问权限。"
                                  : "要在压缩包所在位置解压，需要授权访问你的个人文件夹（一次即可）。")
                     .font(.callout).fixedSize(horizontal: false, vertical: true)
@@ -89,7 +89,7 @@ private struct OptionCard: View {
         Button(action: action) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                    .foregroundStyle(selected ? Color.accentColor : .secondary)
+                    .foregroundStyle(selected ? Theme.accent : .secondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).fontWeight(.semibold)
                     Text(detail).font(.caption).foregroundStyle(.secondary)
@@ -98,8 +98,8 @@ private struct OptionCard: View {
             }
             .padding(12)
             .contentShape(Rectangle())
-            .background(RoundedRectangle(cornerRadius: 9).fill(selected ? Color.accentColor.opacity(0.1) : .clear))
-            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(selected ? Color.accentColor : Color(nsColor: .separatorColor),
+            .background(RoundedRectangle(cornerRadius: 9).fill(selected ? Theme.accent.opacity(0.1) : .clear))
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(selected ? Theme.accent : Color(nsColor: .separatorColor),
                                                                     lineWidth: selected ? 1.5 : 1))
         }
         .buttonStyle(.plain)
