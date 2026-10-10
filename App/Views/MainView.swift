@@ -67,6 +67,11 @@ struct MainView: View {
                     model.pending = []
                 }
                 .keyboardShortcut(.defaultAction)
+                Button("预览内容…") {
+                    model.pending.forEach { (NSApp.delegate as? AppDelegate)?.showPreview(for: $0) }
+                    model.pending = []
+                }
+                .buttonStyle(.link)
             }
             if model.mode == .extract {
                 Text("zip · rar · 7z · tar · gz · xz · zst · iso").font(.caption).foregroundStyle(.tertiary)

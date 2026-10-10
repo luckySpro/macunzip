@@ -5,6 +5,7 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainWindow: NSWindow?
     private var compressPanels: [NSPanel] = []
+    private var previewWindows: [NSWindow] = []
     /// 本次启动是否只是为了处理双击 / 右键请求（不需要显示主窗口）。
     private var launchedForWork = false
     private var finishedLaunching = false
@@ -43,9 +44,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = SharedSettings.shared
         if settings.onboarded && settings.doubleClickBehavior == .extractInPlace {
             JobQueue.shared.extract(fileURLs)
-        } else {
+        } else if !settings.onboarded {
             showMainWindow()
             MainModel.shared.pending = fileURLs
+        } else {
+            // “打开主界面”模式：每个压缩包打开一个内容预览窗口
+            fileURLs.filter(ArchiveFormat.isArchive).forEach { showPreview(for: $0) }
         }
     }
 
@@ -58,6 +62,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             showCompressPanel(for: urls)
         case .extractHere:
             JobQueue.shared.extract(urls)
+        case .preview:
+            urls.forEach { showPreview(for: $0) }
         case .extractTo:
             if let folder = FolderAccess.pickFolder(message: "选择解压位置", prompt: "解压到这里") {
                 JobQueue.shared.extract(urls, to: folder)
@@ -106,10 +112,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    func showPreview(for archive: URL) {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 520, height: 460),
+                              styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                              backing: .buffered, defer: false)
+        window.title = archive.lastPathComponent
+        window.representedURL = archive
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: PreviewView(model: PreviewModel(archive: archive)) { [weak window] in
+            window?.close()
+        })
+        window.center()
+        previewWindows.append(window)
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self, weak window] _ in
+            Task { @MainActor in
+                self?.previewWindows.removeAll { $0 === window }
+                // 关闭动画结束后窗口才算不可见
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                self?.quitIfBackgroundOnly()
+            }
+        }
+        NSApp.setActivationPolicy(.regular)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     /// 只为后台任务启动、任务都结束且没有窗口时退出，保持“用完即走”。
     private func quitIfBackgroundOnly() {
         let hasWindows = NSApp.windows.contains { $0.isVisible }
-        if launchedForWork && JobQueue.shared.isIdle && !hasWindows {
+        if launchedForWork && JobQueue.shared.isIdle && !hasWindows && !SharedSettings.shared.showMenuBar {
             NSApp.terminate(nil)
         }
     }

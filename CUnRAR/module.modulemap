@@ -1,0 +1,6 @@
+module CUnRAR [system] {
+    header "shim.h"
+    link "unrar"
+    link "c++"
+    export *
+}

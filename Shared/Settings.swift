@@ -77,6 +77,12 @@ final class SharedSettings {
         set { defaults.set(newValue, forKey: "revealInFinder") }
     }
 
+    /// 是否在菜单栏常驻（方案 C）。
+    var showMenuBar: Bool {
+        get { defaults.bool(forKey: "showMenuBar") }
+        set { defaults.set(newValue, forKey: "showMenuBar") }
+    }
+
     var trashArchiveAfterExtract: Bool {
         get { defaults.bool(forKey: "trashArchiveAfterExtract") }
         set { defaults.set(newValue, forKey: "trashArchiveAfterExtract") }

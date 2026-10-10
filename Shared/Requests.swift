@@ -8,6 +8,7 @@ struct FinderRequest: Codable {
         case compress        // 弹出压缩面板
         case extractHere
         case extractTo
+        case preview         // 打开内容预览
     }
 
     var id = UUID()

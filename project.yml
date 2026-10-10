@@ -17,7 +17,12 @@ settings:
     HEADER_SEARCH_PATHS:
       - /opt/homebrew/opt/libarchive/include
       - /usr/local/opt/libarchive/include
-    SWIFT_INCLUDE_PATHS: $(SRCROOT)/CArchive
+      - $(SRCROOT)/Vendor/unrar
+    SWIFT_INCLUDE_PATHS:
+      - $(SRCROOT)/CArchive
+      - $(SRCROOT)/CUnRAR
+    LIBRARY_SEARCH_PATHS:
+      - $(SRCROOT)/Vendor/unrar
 
 targets:
   MacUnZip:
@@ -85,7 +90,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.luckyspro.macunzip
-        OTHER_LDFLAGS: [-larchive]
+        OTHER_LDFLAGS: [-larchive, -lunrar, -lc++]
     dependencies:
       - target: MacUnZipFinder
         embed: true

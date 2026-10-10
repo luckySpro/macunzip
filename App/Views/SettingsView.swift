@@ -5,6 +5,7 @@ struct SettingsView: View {
     @State private var behavior = SharedSettings.shared.doubleClickBehavior
     @State private var compress = SharedSettings.shared.compressDefaults
     @State private var isDefault = DefaultHandler.isDefaultForZip
+    @AppStorage("showMenuBar", store: SharedSettings.shared.defaults) private var showMenuBar = false
 
     var body: some View {
         Form {
@@ -21,6 +22,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            Toggle("在菜单栏显示 MacUnZip", isOn: $showMenuBar)
             LabeledContent("个人文件夹权限") {
                 if FolderAccess.hasHomeAccess { Text("已授权").foregroundStyle(.secondary) }
                 else { Button("授权…") { FolderAccess.requestHomeAccess() } }

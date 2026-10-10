@@ -22,19 +22,21 @@ final class JobQueue: ObservableObject {
     // MARK: 解压
 
     /// `destination` 为 nil 时解压到压缩包所在目录。
-    func extract(_ archives: [URL], to destination: URL? = nil) {
+    /// `selection` 只解压其中的路径（来自内容预览）；`knownPassword` 为预览时已输入的密码。
+    func extract(_ archives: [URL], to destination: URL? = nil,
+                 only selection: Set<String>? = nil, knownPassword: String? = nil) {
         for archive in archives where ArchiveFormat.isArchive(archive) {
             let parent = destination ?? archive.deletingLastPathComponent()
             guard let endAccess = FolderAccess.beginAccess(toFolder: parent) else { continue }
 
-            var password: String?
-            if ArchiveEngine.needsPassword(archive) {
+            var password = knownPassword
+            if password == nil, ArchiveEngine.needsPassword(archive) {
                 guard let entered = PasswordPrompt.ask(for: archive) else { endAccess(); continue }
                 password = entered
             }
             run(title: archive.lastPathComponent, cleanup: endAccess) { progress in
-                let result = try ArchiveEngine.extract(archive, into: parent, password: password, progress: progress)
-                if SharedSettings.shared.trashArchiveAfterExtract {
+                let result = try ArchiveEngine.extract(archive, into: parent, password: password, only: selection, progress: progress)
+                if selection == nil, SharedSettings.shared.trashArchiveAfterExtract {
                     try? FileManager.default.trashItem(at: archive, resultingItemURL: nil)
                 }
                 return result

@@ -26,13 +26,17 @@ enum ArchiveEngine {
     /// 只有一个顶层项目时直接放出该项目，否则放进以压缩包命名的文件夹，避免“文件撒一地”。
     @discardableResult
     static func extract(_ archive: URL, into parent: URL, password: String? = nil,
-                        progress: Progress? = nil) throws -> URL {
+                        only selection: Set<String>? = nil, progress: Progress? = nil) throws -> URL {
         let fm = FileManager.default
         let staging = parent.appendingPathComponent(".macunzip-\(UUID().uuidString)", isDirectory: true)
         try fm.createDirectory(at: staging, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: staging) }
 
-        try extractRaw(archive, to: staging, password: password, progress: progress)
+        if RarEngine.handles(archive) {
+            try RarEngine.extract(archive, to: staging, password: password, only: selection, progress: progress)
+        } else {
+            try extractRaw(archive, to: staging, password: password, only: selection, progress: progress)
+        }
 
         let items = try fm.contentsOfDirectory(at: staging, includingPropertiesForKeys: nil)
             .filter { $0.lastPathComponent != "__MACOSX" }
@@ -50,7 +54,15 @@ enum ArchiveEngine {
         return result
     }
 
-    private static func extractRaw(_ archive: URL, to dest: URL, password: String?, progress: Progress?) throws {
+    /// `selection` 中的路径（或其下的所有内容）才会被解压；nil 表示全部。
+    static func isSelected(_ path: String, in selection: Set<String>?) -> Bool {
+        guard let selection else { return true }
+        let trimmed = path.hasSuffix("/") ? String(path.dropLast()) : path
+        return selection.contains { trimmed == $0 || trimmed.hasPrefix($0 + "/") }
+    }
+
+    private static func extractRaw(_ archive: URL, to dest: URL, password: String?,
+                                   only selection: Set<String>?, progress: Progress?) throws {
         guard let reader = archive_read_new() else { throw ArchiveError.libarchive("无法初始化解压器") }
         defer { archive_read_free(reader) }
         archive_read_support_filter_all(reader)
@@ -76,10 +88,11 @@ enum ArchiveEngine {
             if status == ARCHIVE_EOF { break }
             guard status >= ARCHIVE_WARN, let entry else { throw error(reader) }
 
+            guard let name = archive_entry_pathname(entry).map({ String(cString: $0) }) else { continue }
+            guard isSelected(name, in: selection) else { archive_read_data_skip(reader); continue }
             if archive_entry_is_encrypted(entry) != 0, password?.isEmpty ?? true {
                 throw ArchiveError.passwordRequired
             }
-            guard let name = archive_entry_pathname(entry).map({ String(cString: $0) }) else { continue }
             archive_entry_set_pathname(entry, dest.appendingPathComponent(name).path)
 
             guard archive_write_header(writer, entry) >= ARCHIVE_WARN else { throw error(writer) }
@@ -111,8 +124,69 @@ enum ArchiveEngine {
         }
     }
 
+    /// 压缩包中的一个条目，用于内容预览。
+    struct Entry: Identifiable, Hashable {
+        var path: String
+        var size: Int64
+        var isDirectory: Bool
+        var modified: Date?
+        var id: String { path }
+        var name: String { (path as NSString).lastPathComponent }
+        var depth: Int { path.split(separator: "/").count - 1 }
+    }
+
+    /// 列出压缩包内容（不解压）。目录按路径补全，结果按路径排序。
+    static func list(_ archive: URL, password: String? = nil) throws -> [Entry] {
+        if RarEngine.handles(archive) { return complete(try RarEngine.list(archive, password: password)) }
+        guard let reader = archive_read_new() else { throw ArchiveError.libarchive("无法初始化解压器") }
+        defer { archive_read_free(reader) }
+        archive_read_support_filter_all(reader)
+        archive_read_support_format_all(reader)
+        if let password, !password.isEmpty { archive_read_add_passphrase(reader, password) }
+        guard archive_read_open_filename(reader, archive.path, 64 * 1024) == ARCHIVE_OK else { throw error(reader) }
+
+        var entries: [Entry] = []
+        var entry: OpaquePointer?
+        while true {
+            let status = archive_read_next_header(reader, &entry)
+            if status == ARCHIVE_EOF { break }
+            guard status >= ARCHIVE_WARN, let entry else { throw error(reader) }
+            guard var path = archive_entry_pathname(entry).map({ String(cString: $0) }) else { continue }
+            let isDir = archive_entry_filetype(entry) == UInt32(S_IFDIR) || path.hasSuffix("/")
+            if path.hasSuffix("/") { path.removeLast() }
+            if path.hasPrefix("__MACOSX") || path.isEmpty { archive_read_data_skip(reader); continue }
+            let mtime = archive_entry_mtime_is_set(entry) != 0
+                ? Date(timeIntervalSince1970: TimeInterval(archive_entry_mtime(entry))) : nil
+            entries.append(Entry(path: path, size: archive_entry_size(entry), isDirectory: isDir, modified: mtime))
+            archive_read_data_skip(reader)
+        }
+        return complete(entries)
+    }
+
+    /// 补上压缩包里没有单独记录的父目录，并排序。
+    static func complete(_ entries: [Entry]) -> [Entry] {
+        var byPath = Dictionary(entries.map { ($0.path, $0) }, uniquingKeysWith: { a, _ in a })
+        for entry in entries {
+            var parts = entry.path.split(separator: "/").dropLast()
+            while !parts.isEmpty {
+                let dir = parts.joined(separator: "/")
+                if byPath[dir] == nil { byPath[dir] = Entry(path: dir, size: 0, isDirectory: true, modified: nil) }
+                parts = parts.dropLast()
+            }
+        }
+        // 按路径分段比较，保证子项紧跟在父目录后面
+        return byPath.values.sorted { lhs, rhs in
+            let a = lhs.path.split(separator: "/"), b = rhs.path.split(separator: "/")
+            for (x, y) in zip(a, b) where x != y {
+                return String(x).localizedStandardCompare(String(y)) == .orderedAscending
+            }
+            return a.count < b.count
+        }
+    }
+
     /// 是否需要密码（只看到第一个加密条目即返回）。
     static func needsPassword(_ archive: URL) -> Bool {
+        if RarEngine.handles(archive) { return RarEngine.needsPassword(archive) }
         guard let reader = archive_read_new() else { return false }
         defer { archive_read_free(reader) }
         archive_read_support_filter_all(reader)

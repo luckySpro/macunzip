@@ -24,6 +24,7 @@ final class FinderSync: FIFinderSync {
             submenu.addItem(.separator())
             submenu.addItem(item("解压到此处", #selector(extractHere(_:))))
             submenu.addItem(item("解压到…", #selector(extractTo(_:))))
+            if selected.count == 1 { submenu.addItem(item("预览内容…", #selector(preview(_:)))) }
         }
 
         let menu = NSMenu(title: "")
@@ -44,6 +45,7 @@ final class FinderSync: FIFinderSync {
     @objc private func compress(_ sender: NSMenuItem) { send(.compress) }
     @objc private func extractHere(_ sender: NSMenuItem) { send(.extractHere) }
     @objc private func extractTo(_ sender: NSMenuItem) { send(.extractTo) }
+    @objc private func preview(_ sender: NSMenuItem) { send(.preview) }
 
     private func send(_ action: FinderRequest.Action) {
         guard let urls = FIFinderSyncController.default().selectedItemURLs(), !urls.isEmpty else { return }
