@@ -20,3 +20,9 @@ jobs:
           xcodebuild -project MacUnZip.xcodeproj -scheme MacUnZip -configuration Debug \
             -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build | tee build.log | grep -E "error:|warning: .*(MainActor|Sendable)|BUILD" || true
           grep -q "BUILD SUCCEEDED" build.log
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild -project MacUnZip.xcodeproj -scheme MacUnZip -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case .*(passed|failed)|TEST" || true
+          grep -q "TEST SUCCEEDED" test.log

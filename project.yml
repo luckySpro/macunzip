@@ -28,7 +28,8 @@ targets:
   MacUnZip:
     type: application
     platform: macOS
-    scheme: {}
+    scheme:
+      testTargets: [MacUnZipTests]
     sources:
       - App
       - Shared
@@ -121,3 +122,17 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.luckyspro.macunzip.finder
+
+  MacUnZipTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests
+      - path: Shared/ArchiveEngine.swift
+      - path: Shared/RarEngine.swift
+      - path: Shared/ArchiveFormat.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.luckyspro.macunzip.tests
+        OTHER_LDFLAGS: [-larchive, -lunrar, -lc++]
+        GENERATE_INFOPLIST_FILE: YES
