@@ -17,7 +17,7 @@ enum RarEngine {
     }
 
     private static let callback: UNRARCALLBACK = { message, userData, p1, p2 in
-        guard message == UInt32(UCM_NEEDPASSWORDW), userData != 0,
+        guard message == UCM_NEEDPASSWORDW.rawValue, userData != 0,
               let raw = UnsafeMutableRawPointer(bitPattern: userData) else { return 1 }
         let context = Unmanaged<Context>.fromOpaque(raw).takeUnretainedValue()
         context.askedForPassword = true
