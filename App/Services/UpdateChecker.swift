@@ -3,7 +3,7 @@ import SwiftUI
 
 /// 版本检查与强制升级。
 ///
-/// 升级清单 `update.json` 放在仓库主分支，只有仓库所有者能修改，通过 HTTPS 从 GitHub 读取：
+/// 升级清单 `update.json` 放在仓库默认分支，只有仓库所有者能修改，通过 HTTPS 从 GitHub 读取：
 /// `{"latest": "0.2.0", "minimum": "0.1.0", "url": "https://…", "notes": "…"}`
 /// 当前版本低于 `minimum` 时进入强制升级：弹出不可关闭的升级窗口，并拒绝新的解压 / 压缩任务。
 /// 已知的最低版本缓存在本地，只升不降；断网时沿用缓存，从未拿到清单就不拦截，离线照常使用。
@@ -18,7 +18,7 @@ final class UpdateChecker: ObservableObject {
         var notes: String?
     }
 
-    static let manifestURL = URL(string: "https://raw.githubusercontent.com/luckySpro/macunzip/main/update.json")!
+    static let manifestURL = URL(string: "https://raw.githubusercontent.com/luckySpro/macunzip/HEAD/update.json")!
     private static let cacheKey = "updateManifest"
 
     @Published private(set) var manifest: Manifest?

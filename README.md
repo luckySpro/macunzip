@@ -43,7 +43,7 @@ open MacUnZip.xcodeproj
 
 ## 升级
 
-主程序启动时和之后每 6 小时读取仓库主分支的 `update.json`：
+主程序启动时和之后每 6 小时读取仓库默认分支的 `update.json`（0.1.0 读取的是 main 分支）：
 
 ```json
 {"latest": "0.2.0", "minimum": "0.2.0", "url": "下载或 App Store 地址", "notes": "更新说明"}
