@@ -32,6 +32,18 @@ enum Theme: String, CaseIterable, Identifiable {
         }
     }
 
+    /// 整个窗口的底色：在系统窗口底色上叠一层主题色，浅色和深色模式都适用。
+    @ViewBuilder var windowBackground: some View {
+        if self == .system {
+            Color.clear
+        } else {
+            ZStack {
+                Color(nsColor: .windowBackgroundColor)
+                color.opacity(0.16)
+            }
+        }
+    }
+
     static let storageKey = "theme"
 
     /// 当前强调色，各界面用它代替系统强调色。
@@ -60,6 +72,8 @@ struct ThemedRoot: ViewModifier {
         content
             .tint(store.theme.color)
             .accentColor(store.theme.color)
+            .scrollContentBackground(store.theme == .system ? .automatic : .hidden)
+            .background(store.theme.windowBackground.ignoresSafeArea())
             .id(store.theme)
     }
 }

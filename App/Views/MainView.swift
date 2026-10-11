@@ -137,7 +137,7 @@ struct FolderChip: View {
             .font(.callout)
             .padding(.horizontal, 10)
             .frame(height: 26)
-            .background(RoundedRectangle(cornerRadius: 7).fill(isSelected || targeted ? Theme.accent.opacity(0.14) : Color(nsColor: .quaternaryLabelColor).opacity(0.5)))
+            .background(RoundedRectangle(cornerRadius: 7).fill(isSelected || targeted ? Theme.accent.opacity(0.14) : Theme.accent.opacity(0.07)))
             .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(isSelected ? Theme.accent : .clear))
         }
         .buttonStyle(.plain)

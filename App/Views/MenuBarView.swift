@@ -91,7 +91,7 @@ private struct Tile: View {
             Text(title).font(.caption).lineLimit(1)
         }
         .frame(maxWidth: .infinity, minHeight: 54)
-        .background(RoundedRectangle(cornerRadius: 9).fill(isDefault || targeted ? Theme.accent.opacity(0.12) : Color(nsColor: .quaternaryLabelColor).opacity(0.4)))
+        .background(RoundedRectangle(cornerRadius: 9).fill(isDefault || targeted ? Theme.accent.opacity(0.12) : Theme.accent.opacity(0.07)))
         .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(isDefault ? Theme.accent : .clear, lineWidth: 1.5))
         .overlay(alignment: .topTrailing) {
             if isDefault { Image(systemName: "star.fill").font(.system(size: 8)).foregroundStyle(.orange).padding(5) }
