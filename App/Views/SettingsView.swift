@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State private var revealInFinder = SharedSettings.shared.revealInFinder
     @State private var trashAfterExtract = SharedSettings.shared.trashArchiveAfterExtract
     @AppStorage("showMenuBar", store: SharedSettings.shared.defaults) private var showMenuBar = false
-    @AppStorage(Theme.storageKey, store: SharedSettings.shared.defaults) private var theme = Theme.system.rawValue
+    @ObservedObject private var themeStore = ThemeStore.shared
 
     var body: some View {
         Form {
@@ -91,7 +91,7 @@ struct SettingsView: View {
                 LabeledContent("配色") {
                     HStack(spacing: 10) {
                         ForEach(Theme.allCases) { item in
-                            Swatch(theme: item, selected: theme == item.rawValue) { theme = item.rawValue }
+                            Swatch(theme: item, selected: themeStore.theme == item) { themeStore.theme = item }
                         }
                     }
                 }

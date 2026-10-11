@@ -34,22 +34,33 @@ enum Theme: String, CaseIterable, Identifiable {
 
     static let storageKey = "theme"
 
-    static var current: Theme {
-        Theme(rawValue: SharedSettings.shared.defaults.string(forKey: storageKey) ?? "") ?? .system
-    }
-
     /// 当前强调色，各界面用它代替系统强调色。
-    static var accent: Color { current.color }
+    @MainActor static var accent: Color { ThemeStore.shared.theme.color }
 }
 
-/// 加在每个窗口的根视图上：应用强调色，并在切换色卡时刷新界面。
+/// 当前配色。用 ObservableObject 显式通知，所有窗口在切换时立即刷新。
+@MainActor
+final class ThemeStore: ObservableObject {
+    static let shared = ThemeStore()
+
+    @Published var theme: Theme {
+        didSet { SharedSettings.shared.defaults.set(theme.rawValue, forKey: Theme.storageKey) }
+    }
+
+    private init() {
+        theme = Theme(rawValue: SharedSettings.shared.defaults.string(forKey: Theme.storageKey) ?? "") ?? .system
+    }
+}
+
+/// 加在每个窗口的根视图上：应用强调色，并在切换色卡时重建界面。
 struct ThemedRoot: ViewModifier {
-    @AppStorage(Theme.storageKey, store: SharedSettings.shared.defaults) private var theme = Theme.system.rawValue
+    @ObservedObject private var store = ThemeStore.shared
 
     func body(content: Content) -> some View {
         content
-            .tint(Theme(rawValue: theme)?.color ?? .accentColor)
-            .id(theme)
+            .tint(store.theme.color)
+            .accentColor(store.theme.color)
+            .id(store.theme)
     }
 }
 
