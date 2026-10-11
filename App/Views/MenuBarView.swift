@@ -11,16 +11,15 @@ struct MenuBarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Picker("", selection: $model.mode) {
-                    ForEach(MainModel.Mode.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented).labelsHidden().frame(width: 120)
+                ModeSwitch(selection: $model.mode, items: MainModel.Mode.allCases,
+                           title: { $0.rawValue },
+                           icon: { $0 == .extract ? "arrow.down.doc" : "doc.zipper" })
                 Spacer()
                 Text("拖到磁贴即执行").font(.caption).foregroundStyle(.secondary)
             }
 
             HStack(spacing: 10) {
-                Image(systemName: "doc.zipper").font(.title2).foregroundStyle(.secondary)
+                Image(systemName: "archivebox.fill").font(.title2).foregroundStyle(Theme.accent.gradient)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("拖入文件").fontWeight(.semibold)
                     Text("默认\(model.mode == .extract ? "解压" : "保存")到 \(defaultName)")
@@ -29,16 +28,18 @@ struct MenuBarView: View {
                 Spacer()
             }
             .padding(12)
-            .background(RoundedRectangle(cornerRadius: 9).fill(dropTargeted ? Theme.accent.opacity(0.12) : .clear))
-            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(dropTargeted ? Theme.accent : Color(nsColor: .separatorColor),
-                                                                    style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(dropTargeted ? AnyShapeStyle(Theme.accent.opacity(0.12)) : AnyShapeStyle(.background.opacity(0.55))))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(dropTargeted ? Theme.accent : Color.primary.opacity(0.12),
+                              style: StrokeStyle(lineWidth: 1.2, dash: [6, 5])))
             .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
                 loadURLs(providers) { model.handle($0, folderID: model.defaultFolderID) }
                 return true
             }
 
             LazyVGrid(columns: columns, spacing: 6) {
-                Tile(title: "原位置", systemImage: "arrow.down.right.and.arrow.up.left", folderID: nil)
+                Tile(title: "原位置", systemImage: "arrow.uturn.down.circle", folderID: nil)
                 ForEach(model.favorites.prefix(8)) { folder in
                     Tile(title: folder.name, systemImage: "folder", folderID: folder.id)
                 }
@@ -91,8 +92,7 @@ private struct Tile: View {
             Text(title).font(.caption).lineLimit(1)
         }
         .frame(maxWidth: .infinity, minHeight: 54)
-        .background(RoundedRectangle(cornerRadius: 9).fill(isDefault || targeted ? Theme.accent.opacity(0.12) : Theme.accent.opacity(0.07)))
-        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(isDefault ? Theme.accent : .clear, lineWidth: 1.5))
+        .card(radius: 10, highlighted: isDefault || targeted)
         .overlay(alignment: .topTrailing) {
             if isDefault { Image(systemName: "star.fill").font(.system(size: 8)).foregroundStyle(.orange).padding(5) }
         }

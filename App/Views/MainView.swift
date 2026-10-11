@@ -8,43 +8,48 @@ struct MainView: View {
     @State private var dropTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Picker("", selection: $model.mode) {
-                ForEach(MainModel.Mode.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 140)
-            .frame(maxWidth: .infinity)
-
+        VStack(alignment: .leading, spacing: 16) {
+            header
             dropZone
 
-            VStack(alignment: .leading, spacing: 6) {
-                SectionLabel(model.mode == .extract ? "解压到" : "保存到")
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    SectionLabel(model.mode == .extract ? "解压到" : "保存到")
+                    Spacer()
+                    Text("右键可设为默认").font(.caption2).foregroundStyle(.tertiary)
+                }
                 FolderChips()
             }
 
             if model.mode == .extract {
-                HStack(spacing: 16) {
+                HStack(spacing: 18) {
                     SettingToggle("完成后在访达中显示", get: { SharedSettings.shared.revealInFinder },
                                   set: { SharedSettings.shared.revealInFinder = $0 })
                     SettingToggle("解压后移到废纸篓", get: { SharedSettings.shared.trashArchiveAfterExtract },
                                   set: { SharedSettings.shared.trashArchiveAfterExtract = $0 })
                 }
+                .foregroundStyle(.secondary)
             }
 
             if !queue.jobs.isEmpty {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
                     SectionLabel("最近")
-                    ForEach(queue.jobs.prefix(4)) { JobRow(job: $0) }
+                    VStack(spacing: 0) {
+                        ForEach(Array(queue.jobs.prefix(4).enumerated()), id: \.element.id) { index, job in
+                            if index > 0 { Divider().padding(.leading, 34) }
+                            JobRow(job: job).padding(.horizontal, 12)
+                        }
+                    }
+                    .card(radius: 10)
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 34)
-        .padding(.bottom, 16)
-        .frame(width: 440)
+        .padding(.horizontal, 20)
+        .padding(.top, 14)
+        .padding(.bottom, 20)
+        .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
+        .animation(.easeInOut(duration: 0.2), value: model.mode)
         .sheet(isPresented: $model.showOnboarding) { OnboardingView() }
         .onChange(of: model.pending) { pending in
             guard !pending.isEmpty, !model.showOnboarding else { return }
@@ -52,36 +57,67 @@ struct MainView: View {
         }
     }
 
+    /// 标题栏区域：左侧留给红绿灯，中间是模式切换。
+    private var header: some View {
+        ModeSwitch(selection: $model.mode, items: MainModel.Mode.allCases,
+                   title: { $0.rawValue },
+                   icon: { $0 == .extract ? "arrow.down.doc" : "doc.zipper" })
+            .frame(maxWidth: .infinity)
+    }
+
     private var dropZone: some View {
-        VStack(spacing: 8) {
-            Image(systemName: model.mode == .extract ? "archivebox" : "doc.zipper")
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(.secondary)
+        VStack(spacing: 10) {
+            ZStack {
+                Circle().fill(Theme.accent.opacity(dropTargeted ? 0.22 : 0.12)).frame(width: 64, height: 64)
+                Image(systemName: model.mode == .extract ? "archivebox.fill" : "doc.zipper")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(Theme.accent.gradient)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .scaleEffect(dropTargeted ? 1.08 : 1)
+
             if model.pending.isEmpty {
-                Text(model.mode == .extract ? "拖入压缩包" : "拖入要压缩的文件").fontWeight(.semibold)
+                VStack(spacing: 3) {
+                    Text(model.mode == .extract ? "将压缩包拖到这里" : "将要压缩的文件拖到这里")
+                        .font(.headline)
+                    Text("或").font(.caption).foregroundStyle(.tertiary)
+                }
                 Button("选择文件…") { model.chooseFiles() }
+                    .controlSize(.large)
+                    .buttonStyle(.borderedProminent)
             } else {
-                Text("\(model.pending.count) 个压缩包待解压").fontWeight(.semibold)
-                Button("解压到所选位置") {
-                    model.handle(model.pending, folderID: model.selectedFolderID)
-                    model.pending = []
+                Text("\(model.pending.count) 个压缩包待解压").font(.headline)
+                HStack(spacing: 8) {
+                    Button("预览内容…") {
+                        model.pending.forEach { (NSApp.delegate as? AppDelegate)?.showPreview(for: $0) }
+                        model.pending = []
+                    }
+                    .controlSize(.large)
+                    Button("解压到所选位置") {
+                        model.handle(model.pending, folderID: model.selectedFolderID)
+                        model.pending = []
+                    }
+                    .controlSize(.large)
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
                 }
-                .keyboardShortcut(.defaultAction)
-                Button("预览内容…") {
-                    model.pending.forEach { (NSApp.delegate as? AppDelegate)?.showPreview(for: $0) }
-                    model.pending = []
-                }
-                .buttonStyle(.link)
             }
             if model.mode == .extract {
-                Text("zip · rar · 7z · tar · gz · xz · zst · iso").font(.caption).foregroundStyle(.tertiary)
+                Text("ZIP · RAR · 7Z · TAR · GZ · XZ · ZST · ISO")
+                    .font(.system(size: 10, weight: .medium)).tracking(0.8)
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .background(RoundedRectangle(cornerRadius: 10).fill(dropTargeted ? Theme.accent.opacity(0.12) : Color(nsColor: .controlBackgroundColor)))
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(dropTargeted ? Theme.accent : Color(nsColor: .separatorColor),
-                                                                 style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+        .padding(.vertical, 26)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(dropTargeted ? AnyShapeStyle(Theme.accent.opacity(0.10)) : AnyShapeStyle(.background.opacity(0.55))))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .strokeBorder(dropTargeted ? Theme.accent : Color.primary.opacity(0.12),
+                          style: StrokeStyle(lineWidth: dropTargeted ? 2 : 1.2, dash: [6, 5])))
+        .shadow(color: .black.opacity(0.05), radius: 8, y: 3)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: dropTargeted)
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
             loadURLs(providers) { model.handle($0, folderID: model.selectedFolderID) }
             return true
@@ -95,7 +131,7 @@ struct FolderChips: View {
 
     var body: some View {
         FlowLayout(spacing: 6) {
-            FolderChip(title: "原位置", systemImage: "arrow.down.right.and.arrow.up.left", folderID: nil)
+            FolderChip(title: "原位置", systemImage: "arrow.uturn.down.circle", folderID: nil)
                 .contextMenu { Button("设为默认位置") { model.defaultFolderID = nil } }
             ForEach(model.favorites) { folder in
                 FolderChip(title: folder.name, systemImage: "folder", folderID: folder.id)
@@ -107,12 +143,12 @@ struct FolderChips: View {
                     }
             }
             Button { model.addFavorite() } label: {
-                Label("添加", systemImage: "plus").font(.callout)
+                Label("添加", systemImage: "plus").font(.callout).foregroundStyle(.secondary)
+                    .padding(.horizontal, 12).frame(height: 30)
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.15), style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+                    .contentShape(Capsule())
             }
-            .buttonStyle(.borderless)
-            .padding(.horizontal, 8)
-            .frame(height: 26)
-            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color(nsColor: .separatorColor)))
+            .buttonStyle(.plain)
         }
     }
 }
@@ -129,16 +165,24 @@ struct FolderChip: View {
 
     var body: some View {
         Button { model.selectedFolderID = folderID } label: {
-            HStack(spacing: 5) {
-                if isDefault { Image(systemName: "star.fill").foregroundStyle(.orange).font(.caption2) }
-                Image(systemName: systemImage).foregroundStyle(isSelected ? Theme.accent : .secondary)
-                Text(title)
+            HStack(spacing: 6) {
+                Image(systemName: isSelected ? systemImage + ".fill" : systemImage)
+                    .foregroundStyle(isSelected ? Color.white : Theme.accent)
+                Text(title).fontWeight(isSelected ? .semibold : .regular)
+                if isDefault {
+                    Image(systemName: "star.fill").font(.system(size: 8))
+                        .foregroundStyle(isSelected ? Color.white.opacity(0.9) : Color.orange)
+                }
             }
             .font(.callout)
-            .padding(.horizontal, 10)
-            .frame(height: 26)
-            .background(RoundedRectangle(cornerRadius: 7).fill(isSelected || targeted ? Theme.accent.opacity(0.14) : Theme.accent.opacity(0.07)))
-            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(isSelected ? Theme.accent : .clear))
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .padding(.horizontal, 12)
+            .frame(height: 30)
+            .background(Capsule().fill(isSelected ? AnyShapeStyle(Theme.accent.gradient)
+                                       : AnyShapeStyle(targeted ? Theme.accent.opacity(0.18) : Color.primary.opacity(0.06))))
+            .overlay(Capsule().strokeBorder(targeted ? Theme.accent : .clear, lineWidth: 1.5))
+            .shadow(color: isSelected ? Theme.accent.opacity(0.3) : .clear, radius: 4, y: 1)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
@@ -154,7 +198,7 @@ struct JobRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Image(systemName: "doc.zipper").foregroundStyle(.secondary)
+                Image(systemName: icon).foregroundStyle(iconColor).frame(width: 16)
                 Text(job.title).lineLimit(1).truncationMode(.middle)
                 Spacer()
                 switch job.state {
@@ -168,7 +212,22 @@ struct JobRow: View {
             if job.state == .running { ProgressView(value: job.progress).controlSize(.small) }
         }
         .font(.callout)
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
+    }
+
+    private var icon: String {
+        switch job.state {
+        case .running: return "arrow.triangle.2.circlepath"
+        case .done: return "checkmark.circle.fill"
+        case .failed: return "exclamationmark.triangle.fill"
+        }
+    }
+    private var iconColor: Color {
+        switch job.state {
+        case .running: return Theme.accent
+        case .done: return .green
+        case .failed: return .red
+        }
     }
 }
 
@@ -176,7 +235,7 @@ struct SectionLabel: View {
     let text: String
     init(_ text: String) { self.text = text }
     var body: some View {
-        Text(text).font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        Text(text).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
     }
 }
 

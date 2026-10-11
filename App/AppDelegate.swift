@@ -83,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                   backing: .buffered, defer: false)
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
+            window.isMovableByWindowBackground = true
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(rootView: MainView().environmentObject(MainModel.shared)
                 .environmentObject(JobQueue.shared).themed())

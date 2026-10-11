@@ -11,9 +11,10 @@ struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 44, height: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("欢迎使用 MacUnZip").font(.title3.weight(.semibold))
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 52, height: 52)
+                    .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("欢迎使用 MacUnZip").font(.title2.weight(.bold))
                     Text("先做三项设置，之后都可以在“设置”里更改").font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -59,7 +60,10 @@ struct OnboardingView: View {
             HStack {
                 Spacer()
                 Button("稍后") { finish(applyDefault: false) }
+                    .controlSize(.large)
                 Button("完成") { finish(applyDefault: makeDefault) }
+                    .controlSize(.large)
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(working)
             }
