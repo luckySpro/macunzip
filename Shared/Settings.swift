@@ -37,10 +37,10 @@ final class SharedSettings {
     let appGroupID: String
 
     private init() {
-        appGroupID = Bundle.main.object(forInfoDictionaryKey: "MUZAppGroup") as? String ?? "com.luckyspro.macunzip"
+        let configured = Bundle.main.object(forInfoDictionaryKey: "MUZAppGroup") as? String ?? "com.luckyspro.macunzip"
         // 未配置开发者团队时 App Group 前缀为空，组名会和主程序 Bundle ID 相同，
         // 这种 suiteName 无效，改用独立的组名
-        if appGroupID == "com.luckyspro.macunzip" { appGroupID = "com.luckyspro.macunzip.shared" }
+        appGroupID = configured == "com.luckyspro.macunzip" ? "com.luckyspro.macunzip.shared" : configured
         defaults = UserDefaults(suiteName: appGroupID) ?? .standard
     }
 
