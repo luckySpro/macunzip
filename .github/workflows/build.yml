@@ -89,4 +89,4 @@ jobs:
           mkdir check && gh release download "$TAG" -D check
           (cd check && shasum -a 256 -c SHA256SUMS.txt)
           gh release edit "$TAG" --draft=false --latest
-          echo "已发布 $TAG（$GITHUB_SHA）"
+          echo "已发布 ${TAG}（${GITHUB_SHA}）"
