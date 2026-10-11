@@ -80,7 +80,8 @@ pub fn start(app: AppHandle) {
 fn refresh(app: &AppHandle) {
     let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(15)).build();
     let Ok(resp) = agent.get(MANIFEST_URL).set("User-Agent", &format!("MacUnZip/{}", current())).call() else { return };
-    let Ok(manifest) = resp.into_json::<Manifest>() else { return };
+    let Ok(body) = resp.into_string() else { return };
+    let Ok(manifest) = serde_json::from_str::<Manifest>(&body) else { return };
     let Some(channel) = manifest.windows else { return };
     if !channel.url.starts_with("https://") {
         return;
