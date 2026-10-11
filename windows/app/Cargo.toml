@@ -1,0 +1,19 @@
+[package]
+name = "macunzip"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "MacUnZip 解压缩"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+muz-core = { path = "../core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+ureq = "2"

@@ -1,0 +1,85 @@
+name: Windows
+
+on:
+  push:
+    paths: ['windows/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "正式发布的 Windows 版本标签，例如 win-v0.1.0；留空只做测试构建"
+        required: false
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+    working-directory: windows
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            windows/target
+          key: win-${{ hashFiles('windows/Cargo.lock') }}
+      - name: Check format
+        run: cargo fmt --all --check || echo "::warning::格式未统一"
+      - name: Test core
+        run: cargo test --locked -p muz-core
+      - name: Test app
+        run: cargo test --locked -p macunzip
+      - name: Build installer
+        working-directory: windows/app
+        run: npx --yes @tauri-apps/cli@2 build --bundles nsis
+      - name: Collect
+        run: |
+          set -euo pipefail
+          EXE=$(ls target/release/bundle/nsis/*-setup.exe)
+          VERSION=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          cp "$EXE" "MacUnZip-$VERSION-x64-setup.exe"
+          sha256sum "MacUnZip-$VERSION-x64-setup.exe" > SHA256SUMS-windows.txt
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MacUnZip-windows
+          path: |
+            windows/MacUnZip-*-setup.exe
+            windows/SHA256SUMS-windows.txt
+      - name: Publish test build
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete test-build-windows --yes --cleanup-tag 2>/dev/null || true
+          gh release create test-build-windows MacUnZip-*-setup.exe SHA256SUMS-windows.txt --prerelease --target "$GITHUB_SHA" \
+            --title "Windows 测试版（${GITHUB_SHA::7}）" \
+            --notes "未签名的 Windows 测试版本，仅用于安装测试。安装时如果出现 SmartScreen 提示，请点“更多信息”→“仍要运行”。"
+      - name: Release
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          test "${TAG}" = "win-v${VERSION}" || { echo "标签 ${TAG} 与版本 ${VERSION} 不一致"; exit 1; }
+          if gh release view "${TAG}" --json isDraft -q .isDraft 2>/dev/null | grep -q false; then
+            echo "${TAG} 已公开发布，拒绝覆盖"; exit 1
+          fi
+          gh release delete "${TAG}" --yes 2>/dev/null || true
+          gh release create "${TAG}" MacUnZip-*-setup.exe SHA256SUMS-windows.txt --draft --target "$GITHUB_SHA" \
+            --title "MacUnZip for Windows ${VERSION}" --notes-file "../docs/releases/${TAG}.md"
+          mkdir check && gh release download "${TAG}" -D check
+          (cd check && sha256sum -c SHA256SUMS-windows.txt)
+          gh release edit "${TAG}" --draft=false
+          echo "已发布 ${TAG}"

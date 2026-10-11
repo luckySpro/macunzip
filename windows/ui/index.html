@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MacUnZip</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="main">
+    <header class="top">
+      <div class="mode" role="tablist">
+        <button data-mode="extract" class="on" role="tab">
+          <svg viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14"/></svg>解压
+        </button>
+        <button data-mode="compress" role="tab">
+          <svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7zM12 6v2m0 2v2m0 2v2"/></svg>压缩
+        </button>
+      </div>
+      <button class="icon-btn" id="open-settings" title="设置">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </header>
+
+    <section id="drop" class="drop">
+      <div class="badge"><svg viewBox="0 0 24 24" id="drop-icon"><path d="M3 7h18v4H3zM5 11h14v9H5zM10 14h4"/></svg></div>
+      <div id="drop-idle">
+        <h2 id="drop-title">将压缩包拖到这里</h2>
+        <p class="muted small">或</p>
+        <button class="primary" id="choose">选择文件…</button>
+      </div>
+      <div id="drop-pending" hidden>
+        <h2 id="pending-title"></h2>
+        <div class="row center">
+          <button id="pending-cancel">取消</button>
+          <button class="primary" id="pending-go">解压到所选位置</button>
+        </div>
+      </div>
+      <p class="formats" id="formats">ZIP · RAR · 7Z · TAR · GZ · XZ · BZ2 · ZST</p>
+    </section>
+
+    <section>
+      <div class="label-row"><span class="label" id="dest-label">解压到</span><span class="hint">右键可设为默认</span></div>
+      <div class="chips" id="chips"></div>
+    </section>
+
+    <section class="toggles" id="extract-toggles">
+      <label><input type="checkbox" id="reveal-after"> 完成后在资源管理器中显示</label>
+      <label><input type="checkbox" id="delete-after"> 解压后移到回收站</label>
+    </section>
+
+    <section id="recent" hidden>
+      <span class="label">最近</span>
+      <div class="card list" id="jobs"></div>
+    </section>
+  </main>
+
+  <div class="menu" id="chip-menu" hidden></div>
+
+  <!-- 压缩面板 -->
+  <dialog id="compress-dialog">
+    <form method="dialog" class="sheet">
+      <h3>压缩 <span class="muted" id="compress-count"></span></h3>
+      <div class="field"><label>文件名</label><div class="suffix"><input id="c-name" placeholder="归档"><span id="c-ext">.zip</span></div></div>
+      <div class="field"><label>格式</label><select id="c-format"><option value="zip">ZIP</option><option value="seven-z">7Z</option><option value="tar-gz">TAR.GZ</option><option value="tar-zst">TAR.ZST</option></select></div>
+      <div class="field"><label>压缩率</label><select id="c-level"><option value="store">仅存储</option><option value="fast">最快</option><option value="normal">标准</option><option value="best">最高</option></select></div>
+      <div class="field"><label>存放到</label><select id="c-dest"></select></div>
+      <div class="field"><label>密码</label><input id="c-password" type="password" placeholder="不设密码"></div>
+      <p class="muted small" id="c-password-hint"></p>
+      <label class="check"><input type="checkbox" id="c-exclude"> 排除 Thumbs.db 等系统文件</label>
+      <div class="actions">
+        <label class="check"><input type="checkbox" id="c-save"> 保存为默认设置</label>
+        <span class="spacer"></span>
+        <button value="cancel">取消</button>
+        <button class="primary" value="ok" id="c-go">压缩</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 密码 -->
+  <dialog id="password-dialog">
+    <form method="dialog" class="sheet narrow">
+      <h3>需要密码</h3>
+      <p class="muted" id="pw-file"></p>
+      <p class="error" id="pw-wrong" hidden>密码不正确，请重试。</p>
+      <input id="pw-input" type="password" autofocus>
+      <div class="actions"><span class="spacer"></span><button value="cancel">取消</button><button class="primary" value="ok">解压</button></div>
+    </form>
+  </dialog>
+
+  <!-- 提示 -->
+  <dialog id="alert-dialog">
+    <form method="dialog" class="sheet narrow">
+      <h3 id="alert-title"></h3>
+      <p class="muted" id="alert-message"></p>
+      <div class="actions"><span class="spacer"></span><button class="primary" value="ok">好</button></div>
+    </form>
+  </dialog>
+
+  <!-- 设置 -->
+  <dialog id="settings-dialog">
+    <form method="dialog" class="sheet wide">
+      <h3>设置</h3>
+      <div class="group">
+        <div class="group-title">通用</div>
+        <div class="field"><label>双击压缩包时</label><select id="s-double"><option value="extract">直接解压</option><option value="open">打开主界面</option></select></div>
+        <div class="field"><label>默认打开方式</label><button type="button" id="s-defaults">在系统设置中选择…</button></div>
+      </div>
+      <div class="group">
+        <div class="group-title">解压</div>
+        <div class="field"><label>默认解压到</label><select id="s-default-folder"></select></div>
+      </div>
+      <div class="group">
+        <div class="group-title">快速压缩的默认设置</div>
+        <div class="field"><label>格式</label><select id="s-format"><option value="zip">ZIP</option><option value="seven-z">7Z</option><option value="tar-gz">TAR.GZ</option><option value="tar-zst">TAR.ZST</option></select></div>
+        <div class="field"><label>压缩率</label><select id="s-level"><option value="store">仅存储</option><option value="fast">最快</option><option value="normal">标准</option><option value="best">最高</option></select></div>
+        <div class="field"><label>存放到</label><select id="s-cdest"></select></div>
+      </div>
+      <div class="group">
+        <div class="group-title">常用目录</div>
+        <div id="s-favorites"></div>
+        <button type="button" id="s-add-folder">添加目录…</button>
+      </div>
+      <div class="group">
+        <div class="group-title">外观</div>
+        <div class="field"><label>配色</label><div class="swatches" id="s-themes"></div></div>
+      </div>
+      <p class="muted small" id="s-version"></p>
+      <div class="actions"><span class="spacer"></span><button class="primary" value="ok">完成</button></div>
+    </form>
+  </dialog>
+
+  <!-- 首次启动 -->
+  <dialog id="welcome-dialog">
+    <form method="dialog" class="sheet">
+      <div class="welcome"><img src="icon.png" alt=""><div><h3>欢迎使用 MacUnZip</h3><p class="muted small">先做一项设置，之后都可以在“设置”里更改</p></div></div>
+      <div class="group">
+        <div class="field"><label>双击压缩包时</label><select id="w-double"><option value="extract">直接解压</option><option value="open">打开主界面</option></select></div>
+        <p class="muted small">安装时已把 zip、rar、7z 等格式关联到 MacUnZip。如果双击仍由其他软件打开，可以在系统的默认应用设置里改为 MacUnZip。</p>
+        <button type="button" id="w-defaults">打开默认应用设置</button>
+      </div>
+      <div class="actions"><span class="spacer"></span><button class="primary" value="ok">完成</button></div>
+    </form>
+  </dialog>
+
+  <!-- 强制升级 -->
+  <div class="blocker" id="update-blocker" hidden>
+    <div class="sheet narrow">
+      <img src="icon.png" alt="" class="big-icon">
+      <h3>需要升级 MacUnZip</h3>
+      <p class="muted" id="update-text"></p>
+      <p class="small" id="update-notes"></p>
+      <div class="actions"><span class="spacer"></span><button class="primary" id="update-go">立即升级</button></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
