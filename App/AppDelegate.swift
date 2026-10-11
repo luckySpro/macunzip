@@ -77,6 +77,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: 窗口
 
+    /// 窗口超出可见区域（被程序坞或菜单栏挡住）时移回屏幕中间。
+    private func keepMainWindowOnScreen() {
+        DispatchQueue.main.async { [weak self] in
+            guard let window = self?.mainWindow, let visible = (window.screen ?? NSScreen.main)?.visibleFrame else { return }
+            if !visible.contains(window.frame) { window.center() }
+        }
+    }
+
     func showMainWindow() {
         if mainWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 440, height: 480),
@@ -91,13 +99,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .environmentObject(JobQueue.shared).themed())
             controller.sizingOptions = [.preferredContentSize]
             window.contentViewController = controller
+            // 先按内容算好尺寸再居中；不再记忆上次位置，避免高度变化后窗口落到程序坞下面
+            controller.view.layoutSubtreeIfNeeded()
+            window.setContentSize(controller.view.fittingSize)
             window.center()
-            window.setFrameAutosaveName("MainWindow")
             mainWindow = window
         }
         launchedForWork = false
         NSApp.setActivationPolicy(.regular)
         mainWindow?.makeKeyAndOrderFront(nil)
+        keepMainWindowOnScreen()
         NSApp.activate(ignoringOtherApps: true)
     }
 
