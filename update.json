@@ -1,6 +1,6 @@
 {
   "latest": "0.1.0",
   "minimum": "0.1.0",
-  "url": "https://github.com/luckySpro/macunzip/releases/download/test-build/MacUnZip.dmg",
-  "notes": ""
+  "url": "https://github.com/luckySpro/macunzip/releases/tag/v0.1.0",
+  "notes": "MacUnZip 0.1.0 首个公开版本。"
 }

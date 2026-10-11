@@ -2,6 +2,8 @@ name: Build
 
 on:
   push:
+    branches: ['**']
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -53,7 +55,7 @@ jobs:
           name: MacUnZip-dmg
           path: MacUnZip.dmg
       - name: Publish test build
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -61,3 +63,17 @@ jobs:
           gh release create test-build MacUnZip.dmg --prerelease --target "$GITHUB_SHA" \
             --title "测试版（$(git rev-parse --short HEAD)）" \
             --notes "临时签名的测试版本，仅用于本机安装测试。首次打开请在访达中右键 MacUnZip →「打开」。"
+      # 正式版本：推送 vX.Y.Z 标签时生成草稿 Release，核对附件后再公开
+      - name: Draft release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          PLIST=build/Build/Products/Release/MacUnZip.app/Contents/Info.plist
+          APP_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$PLIST")
+          test "$APP_VERSION" = "$VERSION" || { echo "标签 $VERSION 与应用版本 $APP_VERSION 不一致"; exit 1; }
+          mv MacUnZip.dmg "MacUnZip-$VERSION.dmg"
+          shasum -a 256 "MacUnZip-$VERSION.dmg" > SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" "MacUnZip-$VERSION.dmg" SHA256SUMS.txt --draft \
+            --verify-tag --title "MacUnZip $VERSION" --notes-file "docs/releases/$GITHUB_REF_NAME.md"
