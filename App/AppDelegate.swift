@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         finishedLaunching = true
         JobQueue.shared.onIdle = { [weak self] in self?.quitIfBackgroundOnly() }
+        UpdateChecker.shared.start()
         if !SharedSettings.shared.onboarded || !launchedForWork {
             showMainWindow()
         }

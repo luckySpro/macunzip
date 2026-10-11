@@ -25,6 +25,7 @@ final class JobQueue: ObservableObject {
     /// `selection` 只解压其中的路径（来自内容预览）；`knownPassword` 为预览时已输入的密码。
     func extract(_ archives: [URL], to destination: URL? = nil,
                  only selection: Set<String>? = nil, knownPassword: String? = nil) {
+        guard UpdateChecker.shared.allowsWork() else { return }
         for archive in archives where ArchiveFormat.isArchive(archive) {
             let parent = destination ?? archive.deletingLastPathComponent()
             guard let endAccess = FolderAccess.beginAccess(toFolder: parent) else { continue }
@@ -48,7 +49,7 @@ final class JobQueue: ObservableObject {
     // MARK: 压缩
 
     func compress(_ items: [URL], options: CompressDefaults, password: String?, fileName: String? = nil) {
-        guard let first = items.first else { return }
+        guard UpdateChecker.shared.allowsWork(), let first = items.first else { return }
         let folder: URL
         switch options.destination {
         case .sameFolder:
