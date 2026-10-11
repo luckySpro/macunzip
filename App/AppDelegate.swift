@@ -85,8 +85,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.titleVisibility = .hidden
             window.isMovableByWindowBackground = true
             window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: MainView().environmentObject(MainModel.shared)
+            // 窗口高度跟随内容：切换解压 / 压缩、任务列表增减时自动伸缩，不留空白条
+            let controller = NSHostingController(rootView: MainView().environmentObject(MainModel.shared)
                 .environmentObject(JobQueue.shared).themed())
+            controller.sizingOptions = [.preferredContentSize]
+            window.contentViewController = controller
             window.center()
             window.setFrameAutosaveName("MainWindow")
             mainWindow = window
