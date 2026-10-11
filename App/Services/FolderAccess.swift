@@ -24,21 +24,34 @@ enum FolderAccess {
     }
 
     /// 开始访问包含 `url` 的目录；返回结束访问的闭包。拿不到权限时返回 nil。
+    /// 书签能解析不代表一定能写（例如重新签名后旧书签失效、只授权了上层的别名路径），
+    /// 所以每个候选书签都实际试写一次，都不行再请用户授权这个目录。
     static func beginAccess(toFolder url: URL) -> (() -> Void)? {
-        let path = url.standardizedFileURL.path
-        for scoped in allGrantedFolders() where path.hasPrefix(scoped.standardizedFileURL.path) {
+        let path = url.standardizedFileURL.resolvingSymlinksInPath().path
+        for scoped in allGrantedFolders() {
+            let root = scoped.standardizedFileURL.resolvingSymlinksInPath().path
+            guard path == root || path.hasPrefix(root.hasSuffix("/") ? root : root + "/") else { continue }
             if scoped.startAccessingSecurityScopedResource() {
-                return { scoped.stopAccessingSecurityScopedResource() }
+                if canWrite(in: url) { return { scoped.stopAccessingSecurityScopedResource() } }
+                scoped.stopAccessingSecurityScopedResource()
             }
         }
-        // 没有书签：请用户授权这个目录（例如外接硬盘），并记住它。
-        guard let picked = pickFolder(at: url, message: "MacUnZip 需要访问“\(url.lastPathComponent)”才能在这里写入文件。", prompt: "授权")
+        // 没有可用的书签：请用户授权这个目录（例如外接硬盘），并记住它。
+        guard let picked = pickFolder(at: url, message: "MacUnZip 需要访问“\(url.lastPathComponent)”才能在这里写入文件，请点“授权”。", prompt: "授权")
         else { return nil }
         var extras = SharedSettings.shared.defaults.array(forKey: extraBookmarksKey) as? [Data] ?? []
         if let data = try? picked.bookmarkData(options: .withSecurityScope) { extras.append(data) }
         SharedSettings.shared.defaults.set(extras, forKey: extraBookmarksKey)
         _ = picked.startAccessingSecurityScopedResource()
         return { picked.stopAccessingSecurityScopedResource() }
+    }
+
+    /// 在目录里实际创建并删除一个临时文件，确认沙盒确实允许写入。
+    private static func canWrite(in folder: URL) -> Bool {
+        let probe = folder.appendingPathComponent(".macunzip-probe-\(UUID().uuidString)")
+        guard FileManager.default.createFile(atPath: probe.path, contents: nil) else { return false }
+        try? FileManager.default.removeItem(at: probe)
+        return true
     }
 
     static func bookmark(for url: URL) -> Data? {
