@@ -37,6 +37,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: MacUnZip
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.utilities
         MUZAppGroup: $(TeamIdentifierPrefix)com.luckyspro.macunzip
         CFBundleURLTypes:
@@ -110,6 +112,8 @@ targets:
       path: FinderExtension/Info.plist
       properties:
         CFBundleDisplayName: MacUnZip 右键菜单
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         MUZAppGroup: $(TeamIdentifierPrefix)com.luckyspro.macunzip
         NSExtension:
           NSExtensionPointIdentifier: com.apple.FinderSync
