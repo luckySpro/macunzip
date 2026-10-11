@@ -5,3 +5,5 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 Vendor/
+windows/target/
+windows/app/gen/
